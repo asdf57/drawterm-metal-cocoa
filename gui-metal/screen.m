@@ -23,6 +23,8 @@
 #endif
 #define LOG(fmt, ...) if(DEBUG)NSLog((@"%s:%d %s " fmt), __FILE__, __LINE__, __PRETTY_FUNCTION__, ##__VA_ARGS__)
 
+extern char *geometry;
+
 Memimage *gscreen;
 
 @interface DrawLayer : CAMetalLayer
@@ -72,14 +74,29 @@ guimain(void)
 void
 screeninit(void)
 {
+    NSString *geometryObjcStr;
+    NSArray *dimensions;
+
 	memimageinit();
-	NSSize s = [myview convertSizeToBacking:myview.frame.size];
-	screensize(Rect(0, 0, s.width, s.height), ARGB32);
-	gscreen->clipr = Rect(0, 0, s.width, s.height);
-	LOG(@"%g %g", s.width, s.height);
-	terminit();
-	readybit = 1;
-	wakeup(&rend);
+
+    geometryObjcStr = [NSString stringWithUTF8String: geometry];
+    dimensions = [geometryObjcStr componentsSeparatedByString: @"x"];
+
+    if (dimensions.count >= 2) {
+        int width, height;
+        width = [dimensions[0] intValue];
+        height = [dimensions[1] intValue];
+        NSSize s = [myview convertSizeToBacking:myview.frame.size];
+        screensize(Rect(0, 0, width, height), ARGB32);
+        gscreen->clipr = Rect(0, 0, width, height);
+        LOG(@"Screen dimensions: %g %g", s.width, s.height);
+        LOG("GEOMETRY: %s", geometry);
+        terminit();
+        readybit = 1;
+        wakeup(&rend);
+    } else {
+        NSLog(@"Invalid geometry format!");
+    }
 }
 
 void
